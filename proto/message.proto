@@ -18,12 +18,12 @@ message HeartbeatMsg {
 }
 
 message JoinMsg {
-	repeated int64 tokens = 1;
+	repeated uint64 tokens = 1;
 	string  address = 2;
 }
 
 message PeerTableDumpMsg {
-	map<int64,string> peer_table = 1;
+	map<uint64,string> peer_table = 1;
 }
 
 message FuzzyDBMsg {

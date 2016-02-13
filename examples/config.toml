@@ -1,7 +1,7 @@
 Tokens = [0,1000,2000]
 
 [Application]
-Address = ":15605"
+Address = "127.0.0.1:15605"
 
 [DHT]
-Address = "127.0.0.1:15605"
+Address = "127.0.0.1:15606"

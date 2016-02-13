@@ -1,13 +1,10 @@
 Tokens = [500,1500]
 
 [Application]
-IPAddress = "127.0.0.1"
-Port = 16605
+Address = "127.0.0.1:16605"
 
 [DHT]
-IPAddress = "127.0.0.1"
-Port = 16607
+Address = "127.0.0.1:16606"
 
 [[Seeds]]
-IPAddress = "127.0.0.1"
-Port = 15606
+Address = "127.0.0.1:15606"

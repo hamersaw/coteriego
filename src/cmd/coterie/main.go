@@ -25,7 +25,7 @@ func main() {
 	}
 
 	//start dht service
-	dhtService := dht.NewDHTService(config.Tokens, config.Application.Address, config.DHT.Address, config.Seeds)
+	dhtService := dht.NewDHTService(config.Tokens, config.DHT.Address, config.Application.Address, config.Seeds)
 	dhtService.Start()
 
 	//TMP print out tomlConfig
@@ -41,7 +41,7 @@ type tomlConfig struct {
 	Tokens      []uint64
 	Application address
 	DHT         address
-	Seeds       []string
+	Seeds       []dht.Seed
 }
 
 type address struct {

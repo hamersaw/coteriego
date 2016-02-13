@@ -1,21 +1,30 @@
 package dht
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
+
+	"message"
+
+	"github.com/golang/protobuf/proto"
 )
 
 type DHTService struct {
-	tokens []uint64
-	address string
+	tokens             []uint64
+	address            string
 	applicationAddress string
-	seedAddresses []string
-	lookupTable map[uint64]string
-	peerTable map[string][]uint64
+	seeds              []Seed
+	lookupTable        map[uint64]string
+	peerTable          map[string][]uint64
 }
 
-func NewDHTService(tokens []uint64, address string, applicationAddress string, seedAddresses []string) *DHTService {
+type Seed struct {
+	Address string
+}
+
+func NewDHTService(tokens []uint64, address string, applicationAddress string, seeds []Seed) *DHTService {
 	lookupTable := make(map[uint64]string)
 	for _, token := range tokens {
 		lookupTable[token] = applicationAddress
@@ -25,7 +34,7 @@ func NewDHTService(tokens []uint64, address string, applicationAddress string, s
 		tokens: tokens,
 		address: address,
 		applicationAddress: applicationAddress,
-		seedAddresses: seedAddresses,
+		seeds: seeds,
 		lookupTable: lookupTable,
 		peerTable: make(map[string][]uint64),
 	}
@@ -35,8 +44,19 @@ func (d *DHTService) Start() error {
 	fmt.Println("starting dht service")
 
 	//send node join messages to all seeds
-	for _, ipAddress := range d.seedAddresses {
-		fmt.Printf("TODO - send join message %v", ipAddress)
+	dhtMsg := new(message.DHTMsg)
+	dhtMsg.Type = message.DHTMsg_JOIN
+	dhtMsg.JoinMsg = &message.JoinMsg {d.tokens, d.applicationAddress}
+
+	for _, seed := range d.seeds {
+		conn, err := net.Dial("tcp", seed.Address)
+		if err != nil {
+			panic(err)
+		}
+
+		writeDHTMsg(dhtMsg, conn)
+
+		fmt.Printf("TODO - recv join message reply")
 	}
 
 	//start listening for connections
@@ -59,8 +79,19 @@ func (d *DHTService) Start() error {
 
 func (d *DHTService) handleConn(conn net.Conn) {
 	defer conn.Close()
+	dhtMsg, err := readDHTMsg(conn)
+	if err != nil {
+		panic(err)
+	}
 
-	fmt.Printf("TODO - handle client connections")
+	switch(dhtMsg.Type) {
+	case message.DHTMsg_JOIN:
+		fmt.Printf("GOT JOIN MSG - TODO implement everything\n")
+		break;
+	default:
+		fmt.Printf("dht messsage type: %v\n", dhtMsg.Type)
+		break;
+	}
 }
 
 func (d *DHTService) Lookup(token uint64) (string, error) {
@@ -99,4 +130,49 @@ func (d *DHTService) RemoveToken(token uint64) error {
 	}
 	delete(d.lookupTable, token)
 	return nil
+}
+
+func writeDHTMsg(dhtMsg *message.DHTMsg, conn net.Conn) error {
+	bytes, err := proto.Marshal(dhtMsg)
+	if err != nil {
+		return err
+	}
+	lengthBytes := make([]byte, 8)
+	binary.PutUvarint(lengthBytes, uint64(len(bytes)))
+
+	if _, err := conn.Write(lengthBytes); err != nil {
+		return err
+	}
+
+	if _, err := conn.Write(bytes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readDHTMsg(conn net.Conn) (*message.DHTMsg, error) {
+	buf := make([]byte, 4096)
+	_, err := conn.Read(buf[:8])
+	if err != nil {
+		return nil, err
+	}
+
+	length, bytesRead := binary.Uvarint(buf[:8])
+	if bytesRead < 0 {
+		return nil, errors.New("Unable to parse length of dht message protobuf")
+	}
+
+	_, err = conn.Read(buf[:length])
+	if err != nil {
+		return nil, err
+	}
+
+	dhtMsg := new(message.DHTMsg)
+	err = proto.Unmarshal(buf[:length], dhtMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	return dhtMsg, nil
 }
