@@ -4,7 +4,9 @@
 Distributed string fuzzy matching application
 
 ##Install
-protoc proto/message.proto --go_out=src/
+cd proto; protoc message/message.proto --go_out=../src/; cd ..
 
 ##TODO
-- anything and everything
+- process join msg on dht
+- send heartbeat msgs over dht
+- everything with actual application

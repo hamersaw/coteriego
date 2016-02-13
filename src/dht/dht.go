@@ -13,7 +13,7 @@ import (
 
 type DHTService struct {
 	tokens             []uint64
-	address            string
+	Address            string
 	applicationAddress string
 	seeds              []Seed
 	lookupTable        map[uint64]string
