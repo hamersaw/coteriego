@@ -1,0 +1,35 @@
+syntax = "proto3";
+option optimize_for = SPEED;
+
+message DHTMsg {
+	enum Type {
+		HEARTBEAT = 0;
+		JOIN = 1;
+		PEER_TABLE_DUMP = 2;
+	}
+
+	Type type = 1;
+	HeartbeatMsg heartbeat_msg = 2;
+	JoinMsg join_msg = 3;
+	PeerTableDumpMsg peer_table_dump_msg = 4;
+}
+
+message HeartbeatMsg {
+}
+
+message JoinMsg {
+	repeated int64 tokens = 1;
+	string  address = 2;
+}
+
+message PeerTableDumpMsg {
+	map<int64,string> peer_table = 1;
+}
+
+message FuzzyDBMsg {
+	enum Type {
+		OPEN_WRITE_STREAM = 0;
+	}
+
+	Type type = 1;
+}

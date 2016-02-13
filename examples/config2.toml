@@ -1,0 +1,13 @@
+Tokens = [500,1500]
+
+[Application]
+IPAddress = "127.0.0.1"
+Port = 16605
+
+[DHT]
+IPAddress = "127.0.0.1"
+Port = 16607
+
+[[Seeds]]
+IPAddress = "127.0.0.1"
+Port = 15606
