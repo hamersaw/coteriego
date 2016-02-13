@@ -13,7 +13,7 @@ import (
 
 type DHTService struct {
 	tokens             []uint64
-	Address            string
+	address            string
 	applicationAddress string
 	seeds              []Seed
 	lookupTable        map[uint64]string
@@ -43,23 +43,34 @@ func NewDHTService(tokens []uint64, address string, applicationAddress string, s
 func (d *DHTService) Start() error {
 	fmt.Println("starting dht service")
 
-	//send node join messages to all seeds
 	dhtMsg := new(message.DHTMsg)
 	dhtMsg.Type = message.DHTMsg_JOIN
 	dhtMsg.JoinMsg = &message.JoinMsg {d.tokens, d.applicationAddress}
-
 	for _, seed := range d.seeds {
 		conn, err := net.Dial("tcp", seed.Address)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		writeDHTMsg(dhtMsg, conn)
+		if err = writeDHTMsg(dhtMsg, conn); err != nil {
+			return err
+		}
 
-		fmt.Printf("TODO - recv join message reply")
+		rtnMsg, err := readDHTMsg(conn)
+		if err != nil {
+			return err
+		}
+
+		if rtnMsg.Type != message.DHTMsg_LOOKUP_TABLE_DUMP {
+			return errors.New("Expecting lookup table dump message as reply from join msg")
+		}
+
+		lookupTableDumpMsg := dhtMsg.GetLookupTableDumpMsg()
+		for token, address := range lookupTableDumpMsg.GetLookupTable() {
+			_ = d.AddToken(token, address)
+		}
 	}
 
-	//start listening for connections
 	listener, err := net.Listen("tcp", d.address)
 	if err != nil {
 		return err
@@ -86,18 +97,59 @@ func (d *DHTService) handleConn(conn net.Conn) {
 
 	switch(dhtMsg.Type) {
 	case message.DHTMsg_JOIN:
-		fmt.Printf("GOT JOIN MSG - TODO implement everything\n")
-		break;
+		lookupTableDumpMsg := new(message.DHTMsg)
+		lookupTableDumpMsg.Type = message.DHTMsg_LOOKUP_TABLE_DUMP
+		lookupTableDumpMsg.LookupTableDumpMsg = &message.LookupTableDumpMsg { d.lookupTable }
+
+		if err = writeDHTMsg(lookupTableDumpMsg, conn); err != nil {
+			panic(err)
+		}
+
+		joinMsg := dhtMsg.GetJoinMsg()
+		d.AddPeer(joinMsg.Address, joinMsg.Tokens)
+		for _, token := range joinMsg.Tokens {
+			_ = d.AddToken(token, joinMsg.Address)
+		}
+
+		break
 	default:
 		fmt.Printf("dht messsage type: %v\n", dhtMsg.Type)
-		break;
+		break
 	}
 }
 
 func (d *DHTService) Lookup(token uint64) (string, error) {
-	fmt.Printf("TODO - handle token lookup")
+	tokens := []uint64{}
+	for t, _ := range d.lookupTable {
+		tokens = append(tokens, t)
+	}
 
-	return "", errors.New("unimplemented")
+	for i:=1; i < len(tokens); i++ {
+		for j:=0; j < len(tokens)-i; j++ {
+			if (tokens[j] > tokens[j+1]) {
+				tokens[j], tokens[j+1] = tokens[j+1], tokens[j]
+			}
+		}
+	}
+
+	var address string
+	if token < tokens[0] {
+		address, _ := d.lookupTable[tokens[len(tokens)-1]]
+		return address, nil
+	}
+
+	var tokenKey uint64
+	for _, t := range tokens {
+		if token <= t {
+			continue
+		} else {
+			tokenKey = t
+			break
+		}
+	}
+
+	address, _ = d.lookupTable[tokenKey]
+	return address, nil
 }
 
 func (d *DHTService) AddPeer(address string, tokens []uint64) error {

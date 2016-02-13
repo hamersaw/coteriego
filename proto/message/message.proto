@@ -23,7 +23,7 @@ message JoinMsg {
 }
 
 message LookupTableDumpMsg {
-	map<uint64,string> peer_table = 1;
+	map<uint64,string> lookup_table = 1;
 }
 
 message FuzzyDBMsg {
