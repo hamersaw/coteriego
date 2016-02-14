@@ -35,8 +35,6 @@ func NewDHTService(tokens []uint64, address string, applicationAddress string, s
 }
 
 func (d *DHTService) Start() error {
-	fmt.Println("starting dht service")
-
 	for _, seed := range d.seeds {
 		d.AddPeer(seed.Address, nil)
 	}
@@ -49,8 +47,12 @@ func (d *DHTService) Start() error {
 			for address, _ := range d.peerTable {
 				conn, err := net.Dial("tcp", address)
 				if err != nil {
-					//TODO remove peer
-					panic(err)
+					tokens, _ := d.peerTable[address]
+					for _, token := range tokens {
+						_ = d.RemoveToken(token)
+					}
+					_ = d.RemovePeer(address)
+					continue
 				}
 
 				if err = writeDHTMsg(dhtMsg, conn); err != nil {
@@ -75,7 +77,7 @@ func (d *DHTService) Start() error {
 				}
 			}
 
-			time.Sleep(time.Duration(time.Second * 2))
+			time.Sleep(time.Duration(time.Second * 3))
 		}
 	}()
 
@@ -85,7 +87,6 @@ func (d *DHTService) Start() error {
 	}
 
 	for {
-		fmt.Printf("listening for connections on %s\n", d.address)
 		if conn, err := listener.Accept(); err == nil {
 			go d.handleConn(conn)
 		} else {
@@ -126,7 +127,7 @@ func (d *DHTService) handleConn(conn net.Conn) {
 
 		break
 	default:
-		fmt.Printf("dht messsage type: %v\n", dhtMsg.Type)
+		fmt.Printf("TODO - handle dht messsage type: %v\n", dhtMsg.Type)
 		break
 	}
 }
@@ -166,8 +167,8 @@ func (d *DHTService) Lookup(token uint64) (string, error) {
 }
 
 func (d *DHTService) AddPeer(address string, tokens []uint64) error {
-	fmt.Printf("Adding peer with address '%s' and tokens '%v'\n", address, tokens)
-	if _, ok := d.peerTable[address]; ok {
+	//fmt.Printf("Adding peer with address '%s' and tokens '%v'\n", address, tokens)
+	if value, ok := d.peerTable[address]; ok && value != nil {
 		return errors.New(fmt.Sprintf("Unable to insert, address %v already exists in peer table", address))
 	}
 	d.peerTable[address] = tokens
@@ -175,8 +176,8 @@ func (d *DHTService) AddPeer(address string, tokens []uint64) error {
 }
 
 func (d *DHTService) RemovePeer(address string) error {
-	fmt.Printf("Removing peer with address '%s'\n", address)
-	if _, ok := d.peerTable[address]; ok {
+	//fmt.Printf("Removing peer with address '%s'\n", address)
+	if _, ok := d.peerTable[address]; !ok {
 		return errors.New(fmt.Sprintf("Unable to delete, address %v doesn't exist in peer table", address))
 	}
 	delete(d.peerTable, address)
@@ -184,7 +185,7 @@ func (d *DHTService) RemovePeer(address string) error {
 }
 
 func (d *DHTService) AddToken(token uint64, address string) error {
-	fmt.Printf("Adding token '%d' for peer '%s'\n", token, address)
+	//fmt.Printf("Adding token '%d' for peer '%s'\n", token, address)
 	if _, ok := d.lookupTable[token]; ok {
 		return errors.New(fmt.Sprintf("Unable to insert, token %d already exists in lookup table", token))
 	}
@@ -193,8 +194,8 @@ func (d *DHTService) AddToken(token uint64, address string) error {
 }
 
 func (d *DHTService) RemoveToken(token uint64) error {
-	fmt.Printf("Removing token '%d'\n", token)
-	if _, ok := d.lookupTable[token]; ok {
+	//fmt.Printf("Removing token '%d'\n", token)
+	if _, ok := d.lookupTable[token]; !ok {
 		return errors.New(fmt.Sprintf("Unable to delete, token %d doesn't exist in lookup table", token))
 	}
 	delete(d.lookupTable, token)
