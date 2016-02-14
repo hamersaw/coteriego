@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"net"
 
 	"dht"
 
@@ -26,15 +26,24 @@ func main() {
 
 	//start dht service
 	dhtService := dht.NewDHTService(config.DHT.Tokens, config.DHT.Address, config.Address, config.DHT.Seeds)
-	dhtService.Start()
+	go dhtService.Start()
 
-	//TMP print out tomlConfig
-	fmt.Printf("tokens: %v\n", config.DHT.Tokens)
-	fmt.Printf("application address: '%s'\n", config.Address)
-	fmt.Printf("dht address: '%s'\n", config.DHT.Address)
-	for _, address := range config.DHT.Seeds {
-		fmt.Printf("seed address: '%s'\n", address)
+	listener, err := net.Listen("tcp", config.Address)
+	if err != nil {
+		panic(err)
 	}
+
+	for {
+		if conn, err := listener.Accept(); err == nil {
+			go handleConn(conn)
+		} else {
+			continue
+		}
+	}
+}
+
+func handleConn(conn net.Conn) {
+	
 }
 
 type CoterieConfig struct {
