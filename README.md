@@ -7,6 +7,5 @@ Distributed string fuzzy matching application
 cd proto; protoc message/message.proto --go_out=../src/; cd ..
 
 ##TODO
-- process join msg on dht
-- send heartbeat msgs over dht
+- finish implementing data store
 - everything with actual application
