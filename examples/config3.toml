@@ -1,0 +1,10 @@
+Tokens = [250,750,1250]
+
+[Application]
+Address = "127.0.0.1:17605"
+
+[DHT]
+Address = "127.0.0.1:17606"
+
+[[Seeds]]
+Address = "127.0.0.1:15606"

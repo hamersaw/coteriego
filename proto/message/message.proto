@@ -4,26 +4,30 @@ option optimize_for = SPEED;
 message DHTMsg {
 	enum Type {
 		HEARTBEAT = 0;
-		JOIN = 1;
-		LOOKUP_TABLE_DUMP = 2;
+		LOOKUP_TABLE_DUMP = 1;
+		RESULT = 2;
 	}
 
 	Type type = 1;
 	HeartbeatMsg heartbeat_msg = 2;
-	JoinMsg join_msg = 3;
-	LookupTableDumpMsg lookup_table_dump_msg = 4;
+	LookupTableDumpMsg lookup_table_dump_msg = 3;
+	ResultMsg result_msg = 4;
 }
 
 message HeartbeatMsg {
-}
-
-message JoinMsg {
 	repeated uint64 tokens = 1;
-	string  address = 2;
+	string address = 2;
+	string application_address = 3;
+	bool request_table_dump = 4;
 }
 
 message LookupTableDumpMsg {
 	map<uint64,string> lookup_table = 1;
+}
+
+message ResultMsg {
+	bool success = 1;
+	string error_message = 2;
 }
 
 message FuzzyDBMsg {

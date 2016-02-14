@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"message"
 
@@ -25,51 +26,58 @@ type Seed struct {
 }
 
 func NewDHTService(tokens []uint64, address string, applicationAddress string, seeds []Seed) *DHTService {
-	lookupTable := make(map[uint64]string)
+	dhtService := DHTService { tokens, address, applicationAddress, seeds, make(map[uint64]string), make(map[string][]uint64) }
 	for _, token := range tokens {
-		lookupTable[token] = applicationAddress
+		dhtService.AddToken(token, applicationAddress)
 	}
 
-	return &DHTService {
-		tokens: tokens,
-		address: address,
-		applicationAddress: applicationAddress,
-		seeds: seeds,
-		lookupTable: lookupTable,
-		peerTable: make(map[string][]uint64),
-	}
+	return &dhtService
 }
 
 func (d *DHTService) Start() error {
 	fmt.Println("starting dht service")
 
-	dhtMsg := new(message.DHTMsg)
-	dhtMsg.Type = message.DHTMsg_JOIN
-	dhtMsg.JoinMsg = &message.JoinMsg {d.tokens, d.applicationAddress}
 	for _, seed := range d.seeds {
-		conn, err := net.Dial("tcp", seed.Address)
-		if err != nil {
-			return err
-		}
-
-		if err = writeDHTMsg(dhtMsg, conn); err != nil {
-			return err
-		}
-
-		rtnMsg, err := readDHTMsg(conn)
-		if err != nil {
-			return err
-		}
-
-		if rtnMsg.Type != message.DHTMsg_LOOKUP_TABLE_DUMP {
-			return errors.New("Expecting lookup table dump message as reply from join msg")
-		}
-
-		lookupTableDumpMsg := dhtMsg.GetLookupTableDumpMsg()
-		for token, address := range lookupTableDumpMsg.GetLookupTable() {
-			_ = d.AddToken(token, address)
-		}
+		d.AddPeer(seed.Address, nil)
 	}
+
+	go func(){
+		for executions := 0; ; executions++ {
+			dhtMsg := new(message.DHTMsg)
+			dhtMsg.Type = message.DHTMsg_HEARTBEAT
+			dhtMsg.HeartbeatMsg = &message.HeartbeatMsg { d.tokens, d.address, d.applicationAddress, executions % 10 == 0 }
+			for address, _ := range d.peerTable {
+				conn, err := net.Dial("tcp", address)
+				if err != nil {
+					//TODO remove peer
+					panic(err)
+				}
+
+				if err = writeDHTMsg(dhtMsg, conn); err != nil {
+					panic(err)
+				}
+
+				rtnMsg, err := readDHTMsg(conn)
+				if err != nil {
+					panic(err)
+				}
+
+				switch rtnMsg.Type {
+				case message.DHTMsg_RESULT:
+					break;
+				case message.DHTMsg_LOOKUP_TABLE_DUMP:
+					for token, address := range rtnMsg.GetLookupTableDumpMsg().GetLookupTable() {
+						_ = d.AddToken(token, address)
+					}
+					break;
+				default:
+					panic(errors.New("Expecting RESULT or LOOKUP_TABLE_DUMP message type"))
+				}
+			}
+
+			time.Sleep(time.Duration(time.Second * 2))
+		}
+	}()
 
 	listener, err := net.Listen("tcp", d.address)
 	if err != nil {
@@ -96,19 +104,24 @@ func (d *DHTService) handleConn(conn net.Conn) {
 	}
 
 	switch(dhtMsg.Type) {
-	case message.DHTMsg_JOIN:
-		lookupTableDumpMsg := new(message.DHTMsg)
-		lookupTableDumpMsg.Type = message.DHTMsg_LOOKUP_TABLE_DUMP
-		lookupTableDumpMsg.LookupTableDumpMsg = &message.LookupTableDumpMsg { d.lookupTable }
+	case message.DHTMsg_HEARTBEAT:
+		heartbeatMsg := dhtMsg.GetHeartbeatMsg()
+		rtnMsg := new(message.DHTMsg)
+		if heartbeatMsg.RequestTableDump {
+			rtnMsg.Type = message.DHTMsg_LOOKUP_TABLE_DUMP
+			rtnMsg.LookupTableDumpMsg = &message.LookupTableDumpMsg { d.lookupTable }
+		} else {
+			rtnMsg.Type = message.DHTMsg_RESULT
+			rtnMsg.ResultMsg = &message.ResultMsg { true, "" }
+		}
 
-		if err = writeDHTMsg(lookupTableDumpMsg, conn); err != nil {
+		if err = writeDHTMsg(rtnMsg, conn); err != nil {
 			panic(err)
 		}
 
-		joinMsg := dhtMsg.GetJoinMsg()
-		d.AddPeer(joinMsg.Address, joinMsg.Tokens)
-		for _, token := range joinMsg.Tokens {
-			_ = d.AddToken(token, joinMsg.Address)
+		d.AddPeer(heartbeatMsg.Address, heartbeatMsg.Tokens)
+		for _, token := range heartbeatMsg.Tokens {
+			_ = d.AddToken(token, heartbeatMsg.ApplicationAddress)
 		}
 
 		break
@@ -153,6 +166,7 @@ func (d *DHTService) Lookup(token uint64) (string, error) {
 }
 
 func (d *DHTService) AddPeer(address string, tokens []uint64) error {
+	fmt.Printf("Adding peer with address '%s' and tokens '%v'\n", address, tokens)
 	if _, ok := d.peerTable[address]; ok {
 		return errors.New(fmt.Sprintf("Unable to insert, address %v already exists in peer table", address))
 	}
@@ -161,6 +175,7 @@ func (d *DHTService) AddPeer(address string, tokens []uint64) error {
 }
 
 func (d *DHTService) RemovePeer(address string) error {
+	fmt.Printf("Removing peer with address '%s'\n", address)
 	if _, ok := d.peerTable[address]; ok {
 		return errors.New(fmt.Sprintf("Unable to delete, address %v doesn't exist in peer table", address))
 	}
@@ -169,6 +184,7 @@ func (d *DHTService) RemovePeer(address string) error {
 }
 
 func (d *DHTService) AddToken(token uint64, address string) error {
+	fmt.Printf("Adding token '%d' for peer '%s'\n", token, address)
 	if _, ok := d.lookupTable[token]; ok {
 		return errors.New(fmt.Sprintf("Unable to insert, token %d already exists in lookup table", token))
 	}
@@ -177,6 +193,7 @@ func (d *DHTService) AddToken(token uint64, address string) error {
 }
 
 func (d *DHTService) RemoveToken(token uint64) error {
+	fmt.Printf("Removing token '%d'\n", token)
 	if _, ok := d.lookupTable[token]; ok {
 		return errors.New(fmt.Sprintf("Unable to delete, token %d doesn't exist in lookup table", token))
 	}
