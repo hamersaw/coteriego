@@ -1,10 +1,9 @@
-Tokens = [250,750,1250]
-
-[Application]
 Address = "127.0.0.1:17605"
 
 [DHT]
+Tokens = [250,750,1250]
 Address = "127.0.0.1:17606"
+HeartbeatDelay = 3
 
-[[Seeds]]
+[[DHT.Seeds]]
 Address = "127.0.0.1:15606"

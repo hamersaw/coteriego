@@ -21,6 +21,13 @@ type DHTService struct {
 	peerTable          map[string][]uint64
 }
 
+type DHTConfig struct {
+	Tokens         []uint64
+	Address        string
+	HeartbeatDelay uint
+	Seeds          []Seed
+}
+
 type Seed struct {
 	Address string
 }

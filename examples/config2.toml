@@ -1,10 +1,9 @@
-Tokens = [500,1500]
-
-[Application]
 Address = "127.0.0.1:16605"
 
 [DHT]
+Tokens = [500,1500]
 Address = "127.0.0.1:16606"
+HeatbeatDelay = 3
 
-[[Seeds]]
+[[DHT.Seeds]]
 Address = "127.0.0.1:15606"

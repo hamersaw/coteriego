@@ -17,7 +17,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	var config tomlConfig
+	var config CoterieConfig
 
 	//parse configuration file
 	if _, err := toml.DecodeFile(configurationFile, &config); err != nil {
@@ -25,25 +25,19 @@ func main() {
 	}
 
 	//start dht service
-	dhtService := dht.NewDHTService(config.Tokens, config.DHT.Address, config.Application.Address, config.Seeds)
+	dhtService := dht.NewDHTService(config.DHT.Tokens, config.DHT.Address, config.Address, config.DHT.Seeds)
 	dhtService.Start()
 
 	//TMP print out tomlConfig
-	fmt.Printf("tokens: %v\n", config.Tokens)
-	fmt.Printf("application address: '%s'\n", config.Application.Address)
+	fmt.Printf("tokens: %v\n", config.DHT.Tokens)
+	fmt.Printf("application address: '%s'\n", config.Address)
 	fmt.Printf("dht address: '%s'\n", config.DHT.Address)
-	for _, address := range config.Seeds {
+	for _, address := range config.DHT.Seeds {
 		fmt.Printf("seed address: '%s'\n", address)
 	}
 }
 
-type tomlConfig struct {
-	Tokens      []uint64
-	Application address
-	DHT         address
-	Seeds       []dht.Seed
-}
-
-type address struct {
-	Address string
+type CoterieConfig struct {
+	Address     string
+	DHT         dht.DHTConfig
 }

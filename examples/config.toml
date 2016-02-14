@@ -1,7 +1,6 @@
-Tokens = [0,1000,2000]
-
-[Application]
 Address = "127.0.0.1:15605"
 
 [DHT]
+Tokens = [0,1000,2000]
 Address = "127.0.0.1:15606"
+HeartbeatDelay = 3
