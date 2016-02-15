@@ -155,7 +155,7 @@ func (d *DHTService) Lookup(token uint64) (string, error) {
 
 	var tokenKey uint64
 	for _, t := range tokens {
-		if token <= t {
+		if token > t {
 			continue
 		} else {
 			tokenKey = t
