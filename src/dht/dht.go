@@ -7,8 +7,6 @@ import (
 	"net"
 	"time"
 
-	"message"
-
 	"github.com/golang/protobuf/proto"
 )
 
@@ -48,9 +46,9 @@ func (d *DHTService) Start() error {
 
 	go func(){
 		for executions := 0; ; executions++ {
-			dhtMsg := new(message.DHTMsg)
-			dhtMsg.Type = message.DHTMsg_HEARTBEAT
-			dhtMsg.HeartbeatMsg = &message.HeartbeatMsg { d.tokens, d.address, d.applicationAddress, executions % 10 == 0 }
+			dhtMsg := new(DHTMsg)
+			dhtMsg.Type = DHTMsg_HEARTBEAT
+			dhtMsg.HeartbeatMsg = &HeartbeatMsg { d.tokens, d.address, d.applicationAddress, executions % 10 == 0 }
 			for address, _ := range d.peerTable {
 				conn, err := net.Dial("tcp", address)
 				if err != nil {
@@ -72,15 +70,15 @@ func (d *DHTService) Start() error {
 				}
 
 				switch rtnMsg.Type {
-				case message.DHTMsg_RESULT:
+				case DHTMsg_RESULT:
 					break;
-				case message.DHTMsg_LOOKUP_TABLE_DUMP:
+				case DHTMsg_LOOKUP_TABLE_DUMP:
 					for token, address := range rtnMsg.GetLookupTableDumpMsg().GetLookupTable() {
 						_ = d.AddToken(token, address)
 					}
 					break;
 				default:
-					panic(errors.New("Expecting RESULT or LOOKUP_TABLE_DUMP message type"))
+					panic(errors.New("Expecting RESULT or LOOKUP_TABLE_DUMP type"))
 				}
 			}
 
@@ -112,15 +110,15 @@ func (d *DHTService) handleConn(conn net.Conn) {
 	}
 
 	switch(dhtMsg.Type) {
-	case message.DHTMsg_HEARTBEAT:
+	case DHTMsg_HEARTBEAT:
 		heartbeatMsg := dhtMsg.GetHeartbeatMsg()
-		rtnMsg := new(message.DHTMsg)
+		rtnMsg := new(DHTMsg)
 		if heartbeatMsg.RequestTableDump {
-			rtnMsg.Type = message.DHTMsg_LOOKUP_TABLE_DUMP
-			rtnMsg.LookupTableDumpMsg = &message.LookupTableDumpMsg { d.lookupTable }
+			rtnMsg.Type = DHTMsg_LOOKUP_TABLE_DUMP
+			rtnMsg.LookupTableDumpMsg = &LookupTableDumpMsg { d.lookupTable }
 		} else {
-			rtnMsg.Type = message.DHTMsg_RESULT
-			rtnMsg.ResultMsg = &message.ResultMsg { true, "" }
+			rtnMsg.Type = DHTMsg_RESULT
+			rtnMsg.ResultMsg = &ResultMsg { true, "" }
 		}
 
 		if err = writeDHTMsg(rtnMsg, conn); err != nil {
@@ -209,7 +207,7 @@ func (d *DHTService) RemoveToken(token uint64) error {
 	return nil
 }
 
-func writeDHTMsg(dhtMsg *message.DHTMsg, conn net.Conn) error {
+func writeDHTMsg(dhtMsg *DHTMsg, conn net.Conn) error {
 	bytes, err := proto.Marshal(dhtMsg)
 	if err != nil {
 		return err
@@ -228,7 +226,7 @@ func writeDHTMsg(dhtMsg *message.DHTMsg, conn net.Conn) error {
 	return nil
 }
 
-func readDHTMsg(conn net.Conn) (*message.DHTMsg, error) {
+func readDHTMsg(conn net.Conn) (*DHTMsg, error) {
 	buf := make([]byte, 4096)
 	_, err := conn.Read(buf[:8])
 	if err != nil {
@@ -237,7 +235,7 @@ func readDHTMsg(conn net.Conn) (*message.DHTMsg, error) {
 
 	length, bytesRead := binary.Uvarint(buf[:8])
 	if bytesRead < 0 {
-		return nil, errors.New("Unable to parse length of dht message protobuf")
+		return nil, errors.New("Unable to parse length of dht protobuf")
 	}
 
 	_, err = conn.Read(buf[:length])
@@ -245,7 +243,7 @@ func readDHTMsg(conn net.Conn) (*message.DHTMsg, error) {
 		return nil, err
 	}
 
-	dhtMsg := new(message.DHTMsg)
+	dhtMsg := new(DHTMsg)
 	err = proto.Unmarshal(buf[:length], dhtMsg)
 	if err != nil {
 		return nil, err
