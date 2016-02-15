@@ -2,12 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 
+	"coterie"
 	"dht"
 
 	"github.com/BurntSushi/toml"
 )
+
+type CoterieConfig struct {
+	Address     string
+	DHT         dht.DHTConfig
+}
 
 var configurationFile string
 
@@ -19,12 +26,10 @@ func main() {
 	flag.Parse()
 	var config CoterieConfig
 
-	//parse configuration file
 	if _, err := toml.DecodeFile(configurationFile, &config); err != nil {
 		panic(err)
 	}
 
-	//start dht service
 	dhtService := dht.NewDHTService(config.DHT.Tokens, config.DHT.Address, config.Address, config.DHT.Seeds)
 	go dhtService.Start()
 
@@ -43,10 +48,17 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
-	
-}
+	defer conn.Close()
+	coterieMsg, err := coterie.ReadCoterieMsg(conn)
+	if err != nil {
+		panic(err)
+	}
 
-type CoterieConfig struct {
-	Address     string
-	DHT         dht.DHTConfig
+	switch(coterieMsg.Type) {
+	case coterie.CoterieMsg_INSERT_RECORD:
+		break
+	default:
+		fmt.Printf("TODO - handle coterie messsage type: %v\n", coterieMsg.Type)
+		break
+	}
 }
