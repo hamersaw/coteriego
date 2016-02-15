@@ -3,6 +3,7 @@ package recordStore
 import (
 	"errors"
 	"fmt"
+	"hash/crc64"
 )
 
 type RecordStore struct {
@@ -18,6 +19,7 @@ func NewRecordStore() *RecordStore {
 }
 
 func (d *RecordStore) InsertRecord(token uint64, record map[string]string) error {
+	fmt.Printf("inserting record '%d': '%v'\n", token, record)
 	if _, ok := d.records[token]; ok {
 		return errors.New(fmt.Sprintf("Token %d already exists in records map", token))
 	}
@@ -26,11 +28,12 @@ func (d *RecordStore) InsertRecord(token uint64, record map[string]string) error
 	return nil
 }
 
-func (d *RecordStore) InsertEntry(token uint64, field string, value string) error {
-	m, ok := d.entries[field]
+func (d *RecordStore) InsertEntry(token uint64, key string, value string) error {
+	fmt.Printf("inserting entity '%s': '%s'\n", key, value)
+	m, ok := d.entries[key]
 	if !ok {
 		m = make(map[string][]uint64)
-		d.entries[field] = m
+		d.entries[key] = m
 	}
 
 	s, ok := m[value]
@@ -66,9 +69,11 @@ func (d *RecordStore) GetMatchingRecordKeys(field string, value string, match fu
 }
 
 func ComputeRecordToken(record map[string]string) uint64 {
-	return 0
+	crcTable := crc64.MakeTable(crc64.ECMA)
+	return crc64.Checksum([]byte(fmt.Sprintf("%v", record)), crcTable)
 }
 
 func ComputeEntryToken(key string, value string) uint64 {
-	return 0
+	crcTable := crc64.MakeTable(crc64.ECMA)
+	return crc64.Checksum([]byte(fmt.Sprintf("%s:%s", key, value)), crcTable)
 }

@@ -71,12 +71,10 @@ func (d *DHTService) Start() error {
 
 				switch rtnMsg.Type {
 				case DHTMsg_RESULT:
-					break;
 				case DHTMsg_LOOKUP_TABLE_DUMP:
 					for token, address := range rtnMsg.GetLookupTableDumpMsg().GetLookupTable() {
 						_ = d.AddToken(token, address)
 					}
-					break;
 				default:
 					panic(errors.New("Expecting RESULT or LOOKUP_TABLE_DUMP type"))
 				}
@@ -130,10 +128,8 @@ func (d *DHTService) handleConn(conn net.Conn) {
 			_ = d.AddToken(token, heartbeatMsg.ApplicationAddress)
 		}
 
-		break
 	default:
 		fmt.Printf("TODO - handle dht messsage type: %v\n", dhtMsg.Type)
-		break
 	}
 }
 

@@ -51,7 +51,7 @@ func main() {
 
 func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dht.DHTService) {
 	defer conn.Close()
-	conns := make(map[string]net.Conn)
+	conns := make(map[string]*net.TCPConn)
 
 	for {
 		coterieMsg, err := coterie.ReadCoterieMsg(conn)
@@ -61,7 +61,6 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 
 		switch(coterieMsg.Type) {
 		case coterie.CoterieMsg_CLOSE_CONNECTION:
-			break
 		case coterie.CoterieMsg_INSERT_ENTRY:
 			insertEntryMsg := coterieMsg.GetInsertEntryMsg()
 			if err := recStore.InsertEntry(insertEntryMsg.Token, insertEntryMsg.Key, insertEntryMsg.Value); err != nil {
@@ -114,7 +113,6 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 			continue
 		default:
 			fmt.Printf("TODO - handle coterie messsage type: %v\n", coterieMsg.Type)
-			break
 		}
 
 		break
@@ -128,18 +126,22 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 	}
 }
 
-func getConn(address string, conns map[string]net.Conn) net.Conn {
-	var conn net.Conn
+func getConn(address string, conns map[string]*net.TCPConn) *net.TCPConn {
 	if _, ok := conns[address]; ok {
-		conn, _ = conns[address]
+		conn, _ := conns[address]
+		return conn
 	} else {
-		conn, err := net.Dial("tcp", address)
+		tcpAddress, err := net.ResolveTCPAddr("tcp", address)
+		if err != nil {
+			panic(err)
+		}
+
+		conn, err := net.DialTCP("tcp", nil, tcpAddress)
 		if err != nil {
 			panic(err)
 		}
 
 		conns[address] = conn
+		return conn
 	}
-
-	return conn
 }
