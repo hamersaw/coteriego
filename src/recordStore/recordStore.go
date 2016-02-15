@@ -1,16 +1,16 @@
-package dataStore
+package recordStore
 
 import (
 	"errors"
 	"fmt"
 )
 
-type DataStore struct {
+type RecordStore struct {
 	records map[uint64]map[string]string
 	entries  map[string]map[string][]uint64
 }
 
-func (d *DataStore) StoreRecord(token uint64, record map[string]string) error {
+func (d *RecordStore) StoreRecord(token uint64, record map[string]string) error {
 	if _, ok := d.records[token]; ok {
 		return errors.New(fmt.Sprintf("Token %d already exists in records map", token))
 	}
@@ -19,7 +19,7 @@ func (d *DataStore) StoreRecord(token uint64, record map[string]string) error {
 	return nil
 }
 
-func (d *DataStore) StoreEntry(token uint64, field string, value string) error {
+func (d *RecordStore) StoreEntry(token uint64, field string, value string) error {
 	m, ok := d.entries[field]
 	if !ok {
 		m = make(map[string][]uint64)
@@ -42,7 +42,7 @@ func (d *DataStore) StoreEntry(token uint64, field string, value string) error {
 	return nil
 }
 
-func (d *DataStore) GetMatchingRecordKeys(field string, value string, match func(string, string) bool) ([]uint64, error) {
+func (d *RecordStore) GetMatchingRecordKeys(field string, value string, match func(string, string) bool) ([]uint64, error) {
 	m, ok := d.entries[field]
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Unable to find field '%s' in entry map", field))
