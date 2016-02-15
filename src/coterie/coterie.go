@@ -29,7 +29,7 @@ func WriteCoterieMsg(coterieMsg *CoterieMsg, conn net.Conn) error {
 
 func ReadCoterieMsg(conn net.Conn) (*CoterieMsg, error) {
 	buf := make([]byte, 10240)
-	_, err := conn.Read(buf[:8])
+	bytesRead, err := conn.Read(buf[:8])
 	if err != nil {
 		return nil, err
 	}

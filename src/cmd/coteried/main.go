@@ -61,6 +61,7 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 
 		switch(coterieMsg.Type) {
 		case coterie.CoterieMsg_CLOSE_CONNECTION:
+			fmt.Printf("got close connetion message\n")
 		case coterie.CoterieMsg_INSERT_ENTRY:
 			insertEntryMsg := coterieMsg.GetInsertEntryMsg()
 			if err := recStore.InsertEntry(insertEntryMsg.Token, insertEntryMsg.Key, insertEntryMsg.Value); err != nil {
@@ -110,6 +111,14 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 					}
 				}
 			}
+
+			resultMsg := new(coterie.CoterieMsg)
+			resultMsg.Type = coterie.CoterieMsg_RESULT
+			resultMsg.ResultMsg = &coterie.ResultMsg { true, "" }
+
+			if err = coterie.WriteCoterieMsg(resultMsg, conn); err != nil {
+				panic(err)
+			}
 			continue
 		default:
 			fmt.Printf("TODO - handle coterie messsage type: %v\n", coterieMsg.Type)
@@ -120,6 +129,7 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 
 	closeConnectionMsg := new(coterie.CoterieMsg)
 	closeConnectionMsg.Type = coterie.CoterieMsg_CLOSE_CONNECTION
+	closeConnectionMsg.CloseConnectionMsg = &coterie.CloseConnectionMsg { "finished writes" }
 	for _, conn := range conns {
 		coterie.WriteCoterieMsg(closeConnectionMsg, conn)
 		conn.Close()

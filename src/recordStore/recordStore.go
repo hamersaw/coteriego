@@ -4,32 +4,41 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc64"
+	"sync"
 )
 
 type RecordStore struct {
-	records map[uint64]map[string]string
-	entries  map[string]map[string][]uint64
+	records     map[uint64]map[string]string
+	recordsLock sync.RWMutex
+	entries     map[string]map[string][]uint64
+	entriesLock sync.RWMutex
 }
 
 func NewRecordStore() *RecordStore {
 	return &RecordStore {
 		make(map[uint64]map[string]string),
+		sync.RWMutex{},
 		make(map[string]map[string][]uint64),
+		sync.RWMutex{},
 	}
 }
 
 func (d *RecordStore) InsertRecord(token uint64, record map[string]string) error {
-	fmt.Printf("inserting record '%d': '%v'\n", token, record)
+	//fmt.Printf("inserting record '%d': '%v'\n", token, record)
+	d.recordsLock.Lock()
 	if _, ok := d.records[token]; ok {
+		d.recordsLock.Unlock()
 		return errors.New(fmt.Sprintf("Token %d already exists in records map", token))
 	}
 
 	d.records[token] = record
+	d.recordsLock.Unlock()
 	return nil
 }
 
 func (d *RecordStore) InsertEntry(token uint64, key string, value string) error {
-	fmt.Printf("inserting entity '%s': '%s'\n", key, value)
+	//fmt.Printf("inserting entity '%s': '%s'\n", key, value)
+	d.entriesLock.Lock()
 	m, ok := d.entries[key]
 	if !ok {
 		m = make(map[string][]uint64)
@@ -44,11 +53,13 @@ func (d *RecordStore) InsertEntry(token uint64, key string, value string) error 
 
 	for _, t := range s {
 		if t == token {
+			d.entriesLock.Unlock()
 			return errors.New(fmt.Sprintf("Token %d already exists in entry map", token))
 		}
 	}
 
 	s = append(s, token)
+	d.entriesLock.Unlock()
 	return nil
 }
 

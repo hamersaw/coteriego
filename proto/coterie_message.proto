@@ -9,12 +9,19 @@ message CoterieMsg {
 		INSERT_ENTRY = 1;
 		INSERT_RECORD = 2;
 		RECORD_BATCH = 3;
+		RESULT = 4;
 	}
 
 	Type type = 1;
-	InsertEntryMsg insert_entry_msg = 2;
-	InsertRecordMsg insert_record_msg = 3;
-	RecordBatchMsg record_batch_msg = 4;
+	CloseConnectionMsg close_connection_msg = 2;
+	InsertEntryMsg insert_entry_msg = 3;
+	InsertRecordMsg insert_record_msg = 4;
+	RecordBatchMsg record_batch_msg = 5;
+	ResultMsg result_msg = 6;
+}
+
+message CloseConnectionMsg {
+	string reason = 1;
 }
 
 message InsertEntryMsg {
@@ -34,4 +41,9 @@ message Record {
 
 message RecordBatchMsg {
 	repeated Record records = 1;
+}
+
+message ResultMsg {
+	bool success = 1;
+	string msg = 2;
 }

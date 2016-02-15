@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -45,6 +46,11 @@ func main() {
 				panic(err)
 			}
 
+			conn, err := net.Dial("tcp", address)
+			if err != nil {
+				panic(err)
+			}
+
 			records := []*coterie.Record{}
 			for {
 				values, err := reader.Read()
@@ -60,35 +66,50 @@ func main() {
 				records = append(records, &coterie.Record{ record })
 
 				if len(records) % batch_size == 0 {
-					coterieMsg := new(coterie.CoterieMsg)
-					coterieMsg.Type = coterie.CoterieMsg_RECORD_BATCH
-					coterieMsg.RecordBatchMsg = &coterie.RecordBatchMsg { records }
-
-					conn, err := net.Dial("tcp", address)
-					if err != nil {
+					if err = sendRecordBatchMsg(records, conn); err != nil {
 						panic(err)
 					}
-
-					coterie.WriteCoterieMsg(coterieMsg, conn)
 					records = nil
 				}
 			}
 
 			if len(records) != 0 {
-				coterieMsg := new(coterie.CoterieMsg)
-				coterieMsg.Type = coterie.CoterieMsg_RECORD_BATCH
-				coterieMsg.RecordBatchMsg = &coterie.RecordBatchMsg { records }
-
-				conn, err := net.Dial("tcp", address)
-				if err != nil {
+				if err = sendRecordBatchMsg(records, conn); err != nil {
 					panic(err)
 				}
-
-				coterie.WriteCoterieMsg(coterieMsg, conn)
 			}
+
+			coterieMsg := new(coterie.CoterieMsg)
+			coterieMsg.Type = coterie.CoterieMsg_CLOSE_CONNECTION
+			coterieMsg.CloseConnectionMsg = &coterie.CloseConnectionMsg { "finished writes" }
+			if err = coterie.WriteCoterieMsg(coterieMsg, conn); err != nil {
+				panic(err)
+			}
+			conn.Close()
 		default:
 		}
 
 		fmt.Printf("> ")
 	}
+}
+
+func sendRecordBatchMsg(records []*coterie.Record, conn net.Conn) error {
+	coterieMsg := new(coterie.CoterieMsg)
+	coterieMsg.Type = coterie.CoterieMsg_RECORD_BATCH
+	coterieMsg.RecordBatchMsg = &coterie.RecordBatchMsg { records }
+
+	if err := coterie.WriteCoterieMsg(coterieMsg, conn); err != nil {
+		return err
+	}
+
+	rtnMsg, err := coterie.ReadCoterieMsg(conn)
+	if err != nil {
+		return err
+	}
+
+	if rtnMsg.Type != coterie.CoterieMsg_RESULT {
+		return errors.New("Expecting result message")
+	}
+
+	return nil
 }
