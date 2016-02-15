@@ -5,13 +5,16 @@ package coterie;
 
 message CoterieMsg {
 	enum Type {
-		INSERT_ENTRY = 0;
-		INSERT_RECORD = 1;
+		CLOSE_CONNECTION = 0;
+		INSERT_ENTRY = 1;
+		INSERT_RECORD = 2;
+		RECORD_BATCH = 3;
 	}
 
 	Type type = 1;
 	InsertEntryMsg insert_entry_msg = 2;
 	InsertRecordMsg insert_record_msg = 3;
+	RecordBatchMsg record_batch_msg = 4;
 }
 
 message InsertEntryMsg {
@@ -22,5 +25,13 @@ message InsertEntryMsg {
 
 message InsertRecordMsg {
 	uint64 token = 1;
-	map<string,string> entries = 2;
+	Record record = 2;
+}
+
+message Record {
+	map<string,string> entries = 1;
+}
+
+message RecordBatchMsg {
+	repeated Record records = 1;
 }
