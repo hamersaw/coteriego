@@ -1,6 +1,8 @@
 syntax = "proto3";
 option optimize_for = SPEED;
 
+package dht;
+
 message DHTMsg {
 	enum Type {
 		HEARTBEAT = 0;
@@ -28,12 +30,4 @@ message LookupTableDumpMsg {
 message ResultMsg {
 	bool success = 1;
 	string error_message = 2;
-}
-
-message FuzzyDBMsg {
-	enum Type {
-		OPEN_WRITE_STREAM = 0;
-	}
-
-	Type type = 1;
 }
