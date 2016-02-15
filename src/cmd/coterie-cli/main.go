@@ -14,11 +14,11 @@ import (
 )
 
 var address string
-var batch_size int
+var batchSize int
 
 func init() {
 	flag.StringVar(&address, "address", "", "Address of coteried application")
-	flag.IntVar(&batch_size, "batch_size", 50, "Size of record batchs to send on LOAD")
+	flag.IntVar(&batchSize, "batchSize", 50, "Size of record batchs to send on LOAD")
 }
 
 func main() {
@@ -65,7 +65,7 @@ func main() {
 
 				records = append(records, &coterie.Record{ record })
 
-				if len(records) % batch_size == 0 {
+				if len(records) % batchSize == 0 {
 					if err = sendRecordBatchMsg(records, conn); err != nil {
 						panic(err)
 					}
