@@ -61,7 +61,6 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 
 		switch(coterieMsg.Type) {
 		case coterie.CoterieMsg_CLOSE_CONNECTION:
-			fmt.Printf("got close connetion message\n")
 		case coterie.CoterieMsg_INSERT_ENTRY:
 			insertEntryMsg := coterieMsg.GetInsertEntryMsg()
 			if err := recStore.InsertEntry(insertEntryMsg.Token, insertEntryMsg.Key, insertEntryMsg.Value); err != nil {
