@@ -8,20 +8,29 @@ message CoterieMsg {
 		CLOSE_CONNECTION = 0;
 		INSERT_ENTRY = 1;
 		INSERT_RECORD = 2;
-		RECORD_BATCH = 3;
-		RESULT = 4;
+		INSERT_RECORDS = 3;
+		QUERY = 4;
+		RESULT = 5;
 	}
 
 	Type type = 1;
 	CloseConnectionMsg close_connection_msg = 2;
 	InsertEntryMsg insert_entry_msg = 3;
 	InsertRecordMsg insert_record_msg = 4;
-	RecordBatchMsg record_batch_msg = 5;
-	ResultMsg result_msg = 6;
+	QueryMsg query_msg = 5;
+	InsertRecordsMsg insert_records_msg = 6;
+	ResultMsg result_msg = 7;
 }
 
 message CloseConnectionMsg {
 	string reason = 1;
+}
+
+message Filter {
+	string field_name = 1;
+	string type = 2;
+	repeated string arguments = 3;
+	string value = 4;
 }
 
 message InsertEntryMsg {
@@ -35,11 +44,16 @@ message InsertRecordMsg {
 	Record record = 2;
 }
 
+message QueryMsg {
+	repeated string field_names = 1;
+	repeated Filter filters = 2;
+}
+
 message Record {
 	map<string,string> entries = 1;
 }
 
-message RecordBatchMsg {
+message InsertRecordsMsg {
 	repeated Record records = 1;
 }
 

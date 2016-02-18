@@ -21,7 +21,7 @@ func main() {
 	app.Name = "coterie-cli"
 	app.Usage = "provide an easy user interface to the coteried program"
 
-	app.Flags= []cli.Flag {
+	app.Flags = []cli.Flag {
 		cli.StringFlag {
 			Name:        "ipAddress",
 			Value:       "127.0.0.1",
@@ -89,7 +89,7 @@ func loadFile(c *cli.Context) {
 		records = append(records, &coterie.Record{ record })
 		recordCount++
 		if len(records) == 50 {
-			if err = sendRecordBatchMsg(records, conn); err != nil {
+			if err = sendInsertRecordsMsg(records, conn); err != nil {
 				panic(err)
 			}
 			records = nil
@@ -97,7 +97,7 @@ func loadFile(c *cli.Context) {
 	}
 
 	if len(records) != 0 {
-		if err = sendRecordBatchMsg(records, conn); err != nil {
+		if err = sendInsertRecordsMsg(records, conn); err != nil {
 			panic(err)
 		}
 	}
@@ -113,10 +113,10 @@ func loadFile(c *cli.Context) {
 	conn.Close()
 }
 
-func sendRecordBatchMsg(records []*coterie.Record, conn net.Conn) error {
+func sendInsertRecordsMsg(records []*coterie.Record, conn net.Conn) error {
 	coterieMsg := new(coterie.CoterieMsg)
-	coterieMsg.Type = coterie.CoterieMsg_RECORD_BATCH
-	coterieMsg.RecordBatchMsg = &coterie.RecordBatchMsg { records }
+	coterieMsg.Type = coterie.CoterieMsg_INSERT_RECORDS
+	coterieMsg.InsertRecordsMsg = &coterie.InsertRecordsMsg { records }
 
 	if err := coterie.WriteCoterieMsg(coterieMsg, conn); err != nil {
 		return err

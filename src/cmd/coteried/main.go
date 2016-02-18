@@ -73,9 +73,9 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 				panic(err)
 			}
 			continue
-		case coterie.CoterieMsg_RECORD_BATCH:
-			recordBatchMsg := coterieMsg.GetRecordBatchMsg()
-			for _, record := range recordBatchMsg.GetRecords() {
+		case coterie.CoterieMsg_INSERT_RECORDS:
+			insertRecordsMsg := coterieMsg.GetInsertRecordsMsg()
+			for _, record := range insertRecordsMsg.GetRecords() {
 				recordKey := recordStore.ComputeRecordToken(record.GetEntries())
 				recordAddress, err := dhtService.Lookup(recordKey)
 				if err != nil {
