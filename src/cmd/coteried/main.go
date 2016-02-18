@@ -119,6 +119,25 @@ func handleConn(conn net.Conn, recStore *recordStore.RecordStore, dhtService *dh
 				panic(err)
 			}
 			continue
+		case coterie.CoterieMsg_QUERY:
+			queryMsg := coterieMsg.GetQueryMsg()
+
+			for _, filter := range queryMsg.Filters {
+				fmt.Printf("Filter on %s ~%s(%v) %s\n", filter.FieldName, filter.Type, filter.Arguments, filter.Value)
+			}
+
+			fmt.Println("TODO - execute query")
+
+			queryResultMsg := new(coterie.QueryResultMsg)
+			queryResultMsg.Records = []*coterie.Record{}
+
+			coterieMsg := new(coterie.CoterieMsg)
+			coterieMsg.Type = coterie.CoterieMsg_QUERY_RESULT
+			coterieMsg.QueryResultMsg = &coterie.QueryResultMsg { []*coterie.Record{} }
+
+			if err = coterie.WriteCoterieMsg(coterieMsg, conn); err != nil {
+				panic(err)
+			}
 		default:
 			fmt.Printf("TODO - handle coterie messsage type: %v\n", coterieMsg.Type)
 		}

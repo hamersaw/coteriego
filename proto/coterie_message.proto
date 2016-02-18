@@ -10,16 +10,18 @@ message CoterieMsg {
 		INSERT_RECORD = 2;
 		INSERT_RECORDS = 3;
 		QUERY = 4;
-		RESULT = 5;
+		QUERY_RESULT = 5;
+		RESULT = 6;
 	}
 
 	Type type = 1;
 	CloseConnectionMsg close_connection_msg = 2;
 	InsertEntryMsg insert_entry_msg = 3;
 	InsertRecordMsg insert_record_msg = 4;
-	QueryMsg query_msg = 5;
-	InsertRecordsMsg insert_records_msg = 6;
-	ResultMsg result_msg = 7;
+	InsertRecordsMsg insert_records_msg = 5;
+	QueryMsg query_msg = 6;
+	QueryResultMsg query_result_msg = 7;
+	ResultMsg result_msg = 8;
 }
 
 message CloseConnectionMsg {
@@ -47,6 +49,10 @@ message InsertRecordMsg {
 message QueryMsg {
 	repeated string field_names = 1;
 	repeated Filter filters = 2;
+}
+
+message QueryResultMsg {
+	repeated Record records = 1;
 }
 
 message Record {

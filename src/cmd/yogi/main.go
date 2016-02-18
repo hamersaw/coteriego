@@ -136,4 +136,41 @@ func sendInsertRecordsMsg(records []*coterie.Record, conn net.Conn) error {
 
 func query(c *cli.Context) {
 	fmt.Println("TODO - query '", strings.Join(c.Args(), " "), "'")
+
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ipAddress, port))
+	if err != nil {
+		panic(err)
+	}
+
+	queryMsg := new(coterie.QueryMsg)
+	queryMsg.FieldNames = []string{}
+	queryMsg.Filters = []*coterie.Filter {
+		&coterie.Filter {
+			FieldName: "first_name",
+			Type: "levenshtein",
+			Arguments: []string{"3"},
+			Value: "tony",
+		},
+		&coterie.Filter {
+			FieldName: "last_name",
+			Type: "levenshtein",
+			Arguments: []string{"3"},
+			Value: "chambers",
+		},
+	}
+
+	coterieMsg := new(coterie.CoterieMsg)
+	coterieMsg.Type = coterie.CoterieMsg_QUERY
+	coterieMsg.QueryMsg = queryMsg
+
+	if err := coterie.WriteCoterieMsg(coterieMsg, conn); err != nil {
+		panic(err)
+	}
+
+	_, err = coterie.ReadCoterieMsg(conn)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("read records being returned")
 }
